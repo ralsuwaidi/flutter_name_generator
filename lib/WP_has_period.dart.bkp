@@ -1,0 +1,227 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
+import 'package:english_words/english_words.dart';
+import 'package:flutter/rendering.dart'; // Add this line.
+import 'package:fluttertoast/fluttertoast.dart';
+
+void main() => runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Startup Name Generator',
+      theme: ThemeData.dark(),
+      home: RandomWords(),
+    );
+  }
+}
+
+class RandomWords extends StatefulWidget {
+  @override
+  _RandomWordsState createState() => _RandomWordsState();
+}
+
+class _RandomWordsState extends State<RandomWords> {
+  List<String> myadjectives = adjectives.toList()..shuffle();
+  var _redditList = List<String>();
+  Future _response(String period) {
+    if (period == 'week') {
+      return http
+          .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=week');
+    }
+    if (period == 'day') {
+      return http
+          .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=day');
+    }
+    return http
+        .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=month');
+  }
+
+  final RedditPost testReddit = new RedditPost();
+  final redditList = List<RedditPost>();
+  String story;
+  @override
+  void initState() {
+    super.initState();
+    _testReddit('week');
+  }
+
+  void _select(String period) {
+    // Causes the app to rebuild with the new _selectedChoice.
+    setState(() {
+      period = period;
+      _testReddit(period);
+    });
+  }
+
+  Widget build(BuildContext context) {
+    String period = 'week';
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Writing Prompts'),
+        actions: [
+          PopupMenuButton<int>(
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 1,
+                child: Text("Daily"),
+              ),
+              PopupMenuItem(
+                value: 2,
+                child: Text("Weekly"),
+              ),
+              PopupMenuItem(
+                value: 3,
+                child: Text("Monthly"),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 1) {
+                period = 'day';
+              }
+              if (value == 2) {
+                period = 'week';
+              }
+              if (value == 3) {
+                period = 'month';
+              }
+              _select(period);
+              Fluttertoast.showToast(
+                  msg: 'Top of the '+period,
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM,
+                  timeInSecForIosWeb: 1,
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  fontSize: 16.0);
+            },
+          )
+        ],
+      ),
+      body: _buildWPList(period),
+    );
+  }
+
+  // build list of stories
+  Widget _buildWPList(String period) {
+    return FutureBuilder(
+      future: _response(period),
+      builder: (_context, snapshot) {
+        return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _redditList.length * 2,
+            itemBuilder: (BuildContext _context, int i) {
+              if (i.isOdd) {
+                return Divider();
+              }
+              final int index = i ~/ 2;
+
+              return _buildRow(_redditList[index], index);
+            });
+      },
+    );
+  }
+
+  // story after it is clicked
+  Widget _buildStory(String url) {
+    final theStory = new RedditPost()._getStory(url);
+    theStory.then((value) => story = value);
+    return FutureBuilder(
+      future: theStory,
+      builder: (_context, index) {
+        return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: 1,
+            itemBuilder: (BuildContext _context, int i) {
+              if (index.hasData) {
+                return Text(
+                  index.data,
+                );
+              }
+
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            });
+      },
+    );
+  }
+
+  Widget _buildRow(String pair, index) {
+    return ListTile(
+      title: Text(
+        pair,
+      ),
+      onTap: () {
+        _pushSaved(index);
+      },
+    );
+  }
+
+  void _pushSaved(index) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (BuildContext context) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text("Story"),
+          ),
+          body: _buildStory(redditList[index].url),
+        );
+      },
+    ));
+  }
+
+  _testReddit(period) async {
+    final responseresult = await _response(period);
+    final List posts = jsonDecode(responseresult.body)['data']['children'];
+    final postList = posts.map((e) => e['data']['title']).toList();
+    final urlList = posts.map((e) => e['data']['url']).toList();
+    var ints = new List<String>.from(postList);
+
+    for (var i = 0; i < postList.length; i++) {
+      var newPost = RedditPost();
+      newPost.title = postList[i];
+      newPost.url = urlList[i];
+      redditList.add(newPost);
+    }
+
+    testReddit.url = new List<String>.from(urlList)[0];
+    testReddit
+        ._getStory(testReddit.url)
+        .then((value) => testReddit.title = value);
+
+    _redditList = ints;
+  }
+}
+
+class RedditPost {
+  String _title;
+  String _url;
+
+  String get title {
+    return _title;
+  }
+
+  set title(String _title) {
+    this._title = _title;
+  }
+
+  String get url {
+    return _url;
+  }
+
+  set url(String _url) {
+    this._url = _url;
+  }
+
+  Future<String> _getStory(String url) async {
+    final _response = await http.get(url + '.json');
+    final String comment = jsonDecode(_response.body)[1]['data']['children'][1]
+            ['data']['body']
+        .toString();
+    return comment;
+  }
+}
