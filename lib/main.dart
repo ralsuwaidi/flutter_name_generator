@@ -110,8 +110,8 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
   }
 
   // story after it is clicked
-  Widget _buildStory(String url) {
-    final theStory = new RedditPost()._getStory(url);
+  Widget _buildStory(RedditPost post) {
+    final theStory = new RedditPost()._getStory(post.url);
     return FutureBuilder(
       future: theStory,
       builder: (_context, snapshot) {
@@ -135,7 +135,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
     );
   }
 
-  Widget _buildRow(RedditPost post, index) {
+  Widget _buildRow(RedditPost post,int index) {
     List<Icon> _awardList(int awards) {
       List<Icon> _iconList = List<Icon>();
 
@@ -161,12 +161,12 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
         crossAxisAlignment: CrossAxisAlignment.start,
       ),
       onTap: () {
-        _pushSaved(index);
+        _pushSaved(_redditList[index]);
       },
     ));
   }
 
-  void _pushSaved(index) {
+  void _pushSaved(RedditPost post) {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (BuildContext context) {
         return Scaffold(
@@ -190,7 +190,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: <Widget>[
                             Text(
-                              _redditList[index].title,
+                              post.title,
                               style: TextStyle(fontSize: 14),
                             ),
                             Row(
@@ -203,7 +203,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                                           fontWeight: FontWeight.bold),
                                       children: <TextSpan>[
                                         TextSpan(
-                                            text: _redditList[index]
+                                            text: post
                                                 .score
                                                 .toString(),
                                             style: TextStyle(
@@ -220,7 +220,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                                             text: DateFormat('dd-MM-yyyy ')
                                                 .format(DateTime
                                                     .fromMillisecondsSinceEpoch(
-                                                        _redditList[index]
+                                                        post
                                                                 .date
                                                                 .toInt() *
                                                             1000))
@@ -238,7 +238,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
               ];
             },
             body: Center(
-              child: _buildStory(_redditList[index].url),
+              child: _buildStory(post),
             ),
           ),
         );
