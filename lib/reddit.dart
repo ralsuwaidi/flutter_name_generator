@@ -59,4 +59,41 @@ class RedditPost {
     return RedditPost(
         awards: awards, title: title, score: score, date: date, story: story);
   }
+Future<List<RedditPost>> updateRedditList(String period) async {
+    Future<http.Response> _response(String period) {
+    if (period == 'week') {
+      return http
+          .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=week');
+    }
+    if (period == 'day') {
+      return http
+          .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=day');
+    }
+    return http
+        .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=month');
+  }
+  
+    final responseresult = await _response(period);
+    final List posts = jsonDecode(responseresult.body)['data']['children'];
+    final titleList = posts.map((e) => e['data']['title']).toList();
+    final urlList = posts.map((e) => e['data']['url']).toList();
+    final dateList = posts.map((e) => e['data']['created']).toList();
+    final scoreList = posts.map((e) => e['data']['ups']).toList();
+    final awaredList =
+        posts.map((e) => e['data']['total_awards_received']).toList();
+
+    // make new list of RedditPost with url and title
+    var redditList = new List<RedditPost>();
+    for (var i = 0; i < titleList.length; i++) {
+      var newPost = RedditPost(
+          title: titleList[i],
+          url: urlList[i],
+          awards: awaredList[i],
+          score: scoreList[i],
+          date: dateList[i]);
+      redditList.add(newPost);
+    }
+    return redditList;
+  }
+  
 }

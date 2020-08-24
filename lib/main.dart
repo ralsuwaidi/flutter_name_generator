@@ -1,7 +1,4 @@
-import 'dart:convert';
-
 import 'reddit.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart'; // Add this line.
 import 'package:fluttertoast/fluttertoast.dart';
@@ -28,12 +25,11 @@ class RedditWritingPrompts extends StatefulWidget {
 }
 
 class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
-  var _redditList = List<RedditPost>();
-  Future<http.Response> redditResponse;
   String _period = 'week';
+  Future<List<RedditPost>> _listFuture;
   @override
   void initState() {
-    _populateWP(_period);
+    _listFuture = RedditPost().updateRedditList('week');
 
     super.initState();
   }
@@ -44,71 +40,77 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
       DeviceOrientation.portraitDown,
     ]);
 
-    return FutureBuilder(
-        future: _response(_period),
-        builder: (BuildContext context, AsyncSnapshot snapshot) {
-          return Scaffold(
-            appBar: AppBar(
-              backgroundColor: Colors.grey[850],
-              title: Text('  Writing Prompts: ' +
-                  _period.replaceFirst(_period[0], _period[0].toUpperCase())),
-              actions: [
-                PopupMenuButton<int>(
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 1,
-                      child: Text("Daily"),
-                    ),
-                    PopupMenuItem(
-                      value: 2,
-                      child: Text("Weekly"),
-                    ),
-                    PopupMenuItem(
-                      value: 3,
-                      child: Text("Monthly"),
-                    ),
-                  ],
-                  onSelected: (value) {
-                    if (value == 1) {
-                      _period = 'day';
-                    }
-                    if (value == 2) {
-                      _period = 'week';
-                    }
-                    if (value == 3) {
-                      _period = 'month';
-                    }
-                    _select(_period);
-                    Fluttertoast.showToast(
-                        msg: 'Top of the ' + _period,
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.BOTTOM,
-                        timeInSecForIosWeb: 1,
-                        backgroundColor: Colors.red,
-                        textColor: Colors.white,
-                        fontSize: 16.0);
-                  },
-                )
-              ],
-            ),
-            body: _buildWPList(_period),
-          );
-        });
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.grey[850],
+        title: Text('  Writing Prompts: ' +
+            _period.replaceFirst(_period[0], _period[0].toUpperCase())),
+        actions: [
+          PopupMenuButton<int>(
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 1,
+                child: Text("Daily"),
+              ),
+              PopupMenuItem(
+                value: 2,
+                child: Text("Weekly"),
+              ),
+              PopupMenuItem(
+                value: 3,
+                child: Text("Monthly"),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 1) {
+                _period = 'day';
+              }
+              if (value == 2) {
+                _period = 'week';
+              }
+              if (value == 3) {
+                _period = 'month';
+              }
+              _select(_period);
+              Fluttertoast.showToast(
+                  msg: 'Top of the ' + _period,
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM,
+                  timeInSecForIosWeb: 1,
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  fontSize: 16.0);
+            },
+          )
+        ],
+      ),
+      body: FutureBuilder(
+          future: _listFuture,
+          builder: (BuildContext context, AsyncSnapshot snapshot) {
+            if (snapshot.hasData) {
+              return _buildWPList(snapshot.data);
+            }
+
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }),
+    );
   }
 
   // build list of stories
-  Widget _buildWPList(String period) {
+  Widget _buildWPList(List<RedditPost> postList) {
     return Scrollbar(
         child: ListView.builder(
             padding: const EdgeInsets.all(8),
-            itemCount: _redditList.length * 2,
+            itemCount: postList.length * 2,
             itemBuilder: (BuildContext _context, int i) {
               if (i.isOdd) {
                 return Divider();
               }
               final int index = i ~/ 2;
 
-              return _buildRow(_redditList[index], index);
+              return _buildRow(postList[index], index, postList);
             }));
   }
 
@@ -139,7 +141,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
   }
 
   // one row from list of stories
-  Widget _buildRow(RedditPost post, int index) {
+  Widget _buildRow(RedditPost post, int index, postList) {
     return Container(
         child: ListTile(
       title: Text(
@@ -152,7 +154,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
         crossAxisAlignment: CrossAxisAlignment.start,
       ),
       onTap: () {
-        _pushStory(_redditList[index]);
+        _pushStory(postList[index]);
       },
     ));
   }
@@ -259,43 +261,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
 
   void _select(String period) {
     setState(() {
-      _populateWP(period);
+      _listFuture = RedditPost().updateRedditList(period);
     });
-  }
-
-  Future<http.Response> _response(String period) {
-    if (period == 'week') {
-      return http
-          .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=week');
-    }
-    if (period == 'day') {
-      return http
-          .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=day');
-    }
-    return http
-        .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=month');
-  }
-
-  void _populateWP(String period) async {
-    final responseresult = await _response(period);
-    final List posts = jsonDecode(responseresult.body)['data']['children'];
-    final titleList = posts.map((e) => e['data']['title']).toList();
-    final urlList = posts.map((e) => e['data']['url']).toList();
-    final dateList = posts.map((e) => e['data']['created']).toList();
-    final scoreList = posts.map((e) => e['data']['ups']).toList();
-    final awaredList =
-        posts.map((e) => e['data']['total_awards_received']).toList();
-
-    // make new list of RedditPost with url and title
-    _redditList = new List<RedditPost>();
-    for (var i = 0; i < titleList.length; i++) {
-      var newPost = RedditPost(
-          title: titleList[i],
-          url: urlList[i],
-          awards: awaredList[i],
-          score: scoreList[i],
-          date: dateList[i]);
-      _redditList.add(newPost);
-    }
   }
 }
