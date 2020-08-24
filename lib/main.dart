@@ -180,7 +180,8 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                               post.title,
                               style: TextStyle(fontSize: 14),
                             ),
-                            if (post.awards != 0) _printAwards(post.awards, size: 12),
+                            if (post.awards != 0)
+                              _printAwards(post.awards, size: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: <Widget>[
@@ -193,6 +194,9 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                                         TextSpan(
                                             text: post.score.toString(),
                                             style: TextStyle(
+                                                color: post.score > 10000 // high score
+                                                    ? Color(0xFFff5733) // upvote color
+                                                    : null,
                                                 fontWeight: FontWeight.normal)),
                                       ]),
                                 ),
@@ -230,7 +234,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
     ));
   }
 
-  Widget _printAwards(int awardNumber, {double size=15}) {
+  Widget _printAwards(int awardNumber, {double size = 15}) {
     if (awardNumber == 1) {
       return Row(children: <Widget>[
         Icon(Icons.stars, size: size, color: Colors.yellow)
@@ -239,7 +243,8 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
       return Row(children: <Widget>[
         Icon(Icons.stars, size: size, color: Colors.yellow),
         Text(
-          awardNumber.toString(),style: TextStyle(fontSize: size),
+          awardNumber.toString(),
+          style: TextStyle(fontSize: size),
         )
       ]);
     }
