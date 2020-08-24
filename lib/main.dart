@@ -135,17 +135,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
     );
   }
 
-  Widget _buildRow(RedditPost post,int index) {
-    List<Icon> _awardList(int awards) {
-      List<Icon> _iconList = List<Icon>();
-
-      for (var i = 0; i < awards; i++) {
-        _iconList.add(Icon(Icons.stars, size: 18, color: Colors.yellow));
-      }
-
-      return _iconList;
-    }
-
+  Widget _buildRow(RedditPost post, int index) {
     return Container(
         child: ListTile(
       title: Text(
@@ -153,10 +143,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
       ),
       subtitle: Column(
         children: <Widget>[
-          if (post.awards != 0) SizedBox(height: 5),
-          Row(
-            children: _awardList(post.awards),
-          )
+          if (post.awards != 0) _printAwards(post.awards, size: 12),
         ],
         crossAxisAlignment: CrossAxisAlignment.start,
       ),
@@ -193,6 +180,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                               post.title,
                               style: TextStyle(fontSize: 14),
                             ),
+                            if (post.awards != 0) _printAwards(post.awards, size: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: <Widget>[
@@ -203,9 +191,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                                           fontWeight: FontWeight.bold),
                                       children: <TextSpan>[
                                         TextSpan(
-                                            text: post
-                                                .score
-                                                .toString(),
+                                            text: post.score.toString(),
                                             style: TextStyle(
                                                 fontWeight: FontWeight.normal)),
                                       ]),
@@ -220,9 +206,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                                             text: DateFormat('dd-MM-yyyy ')
                                                 .format(DateTime
                                                     .fromMillisecondsSinceEpoch(
-                                                        post
-                                                                .date
-                                                                .toInt() *
+                                                        post.date.toInt() *
                                                             1000))
                                                 .toString(),
                                             style: TextStyle(
@@ -244,6 +228,21 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
         );
       },
     ));
+  }
+
+  Widget _printAwards(int awardNumber, {double size=15}) {
+    if (awardNumber == 1) {
+      return Row(children: <Widget>[
+        Icon(Icons.stars, size: size, color: Colors.yellow)
+      ]);
+    } else {
+      return Row(children: <Widget>[
+        Icon(Icons.stars, size: size, color: Colors.yellow),
+        Text(
+          awardNumber.toString(),style: TextStyle(fontSize: size),
+        )
+      ]);
+    }
   }
 
   void _select(String period) {
@@ -289,6 +288,8 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
   }
 }
 
+// json serialisation (to save to shared pref)
+// https://flutter.dev/docs/development/data-and-backend/json
 class RedditPost {
   const RedditPost({this.title, this.url, this.awards, this.date, this.score});
 
@@ -305,4 +306,20 @@ class RedditPost {
         .toString();
     return comment;
   }
+
+// to save to shared pref
+  RedditPost.fromJson(Map<String, dynamic> json)
+      : title = json['title'],
+        url = json['url'],
+        score = json['score'],
+        awards = json['awards'],
+        date = json['date'];
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'url': url,
+        'awards': awards,
+        'score': score,
+        'date': date,
+      };
 }
