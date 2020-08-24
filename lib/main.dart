@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'reddit.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart'; // Add this line.
@@ -28,10 +29,12 @@ class RedditWritingPrompts extends StatefulWidget {
 
 class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
   var _redditList = List<RedditPost>();
+  Future<http.Response> redditResponse;
   String _period = 'week';
   @override
   void initState() {
     _populateWP(_period);
+
     super.initState();
   }
 
@@ -40,78 +43,78 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.grey[850],
-        title: Text('  Writing Prompts: ' +
-            _period.replaceFirst(_period[0], _period[0].toUpperCase())),
-        actions: [
-          PopupMenuButton<int>(
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 1,
-                child: Text("Daily"),
-              ),
-              PopupMenuItem(
-                value: 2,
-                child: Text("Weekly"),
-              ),
-              PopupMenuItem(
-                value: 3,
-                child: Text("Monthly"),
-              ),
-            ],
-            onSelected: (value) {
-              if (value == 1) {
-                _period = 'day';
-              }
-              if (value == 2) {
-                _period = 'week';
-              }
-              if (value == 3) {
-                _period = 'month';
-              }
-              _select(_period);
-              Fluttertoast.showToast(
-                  msg: 'Top of the ' + _period,
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.BOTTOM,
-                  timeInSecForIosWeb: 1,
-                  backgroundColor: Colors.red,
-                  textColor: Colors.white,
-                  fontSize: 16.0);
-            },
-          )
-        ],
-      ),
-      body: _buildWPList(_period),
-    );
+
+    return FutureBuilder(
+        future: _response(_period),
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          return Scaffold(
+            appBar: AppBar(
+              backgroundColor: Colors.grey[850],
+              title: Text('  Writing Prompts: ' +
+                  _period.replaceFirst(_period[0], _period[0].toUpperCase())),
+              actions: [
+                PopupMenuButton<int>(
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 1,
+                      child: Text("Daily"),
+                    ),
+                    PopupMenuItem(
+                      value: 2,
+                      child: Text("Weekly"),
+                    ),
+                    PopupMenuItem(
+                      value: 3,
+                      child: Text("Monthly"),
+                    ),
+                  ],
+                  onSelected: (value) {
+                    if (value == 1) {
+                      _period = 'day';
+                    }
+                    if (value == 2) {
+                      _period = 'week';
+                    }
+                    if (value == 3) {
+                      _period = 'month';
+                    }
+                    _select(_period);
+                    Fluttertoast.showToast(
+                        msg: 'Top of the ' + _period,
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        timeInSecForIosWeb: 1,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0);
+                  },
+                )
+              ],
+            ),
+            body: _buildWPList(_period),
+          );
+        });
   }
 
   // build list of stories
   Widget _buildWPList(String period) {
-    return FutureBuilder(
-      future: _response(period),
-      builder: (_context, snapshot) {
-        return Scrollbar(
-            child: ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: _redditList.length * 2,
-                itemBuilder: (BuildContext _context, int i) {
-                  if (i.isOdd) {
-                    return Divider();
-                  }
-                  final int index = i ~/ 2;
+    return Scrollbar(
+        child: ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: _redditList.length * 2,
+            itemBuilder: (BuildContext _context, int i) {
+              if (i.isOdd) {
+                return Divider();
+              }
+              final int index = i ~/ 2;
 
-                  return _buildRow(_redditList[index], index);
-                }));
-      },
-    );
+              return _buildRow(_redditList[index], index);
+            }));
   }
 
-  // story after it is clicked
+  // story widget after it is clicked
   Widget _buildStory(RedditPost post) {
-    final theStory = new RedditPost()._getStory(post.url);
+    final theStory = RedditPost().getStory(post.url);
     return FutureBuilder(
       future: theStory,
       builder: (_context, snapshot) {
@@ -135,6 +138,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
     );
   }
 
+  // one row from list of stories
   Widget _buildRow(RedditPost post, int index) {
     return Container(
         child: ListTile(
@@ -148,12 +152,13 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
         crossAxisAlignment: CrossAxisAlignment.start,
       ),
       onTap: () {
-        _pushSaved(_redditList[index]);
+        _pushStory(_redditList[index]);
       },
     ));
   }
 
-  void _pushSaved(RedditPost post) {
+  // page with story and large header
+  void _pushStory(RedditPost post) {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (BuildContext context) {
         return Scaffold(
@@ -194,8 +199,10 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                                         TextSpan(
                                             text: post.score.toString(),
                                             style: TextStyle(
-                                                color: post.score > 10000 // high score
-                                                    ? Color(0xFFff5733) // upvote color
+                                                color: post.score >
+                                                        10000 // high score
+                                                    ? Color(
+                                                        0xFFff5733) // upvote color
                                                     : null,
                                                 fontWeight: FontWeight.normal)),
                                       ]),
@@ -256,7 +263,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
     });
   }
 
-  Future _response(String period) {
+  Future<http.Response> _response(String period) {
     if (period == 'week') {
       return http
           .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=week');
@@ -269,7 +276,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
         .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=month');
   }
 
-  _populateWP(period) async {
+  void _populateWP(String period) async {
     final responseresult = await _response(period);
     final List posts = jsonDecode(responseresult.body)['data']['children'];
     final titleList = posts.map((e) => e['data']['title']).toList();
@@ -291,40 +298,4 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
       _redditList.add(newPost);
     }
   }
-}
-
-// json serialisation (to save to shared pref)
-// https://flutter.dev/docs/development/data-and-backend/json
-class RedditPost {
-  const RedditPost({this.title, this.url, this.awards, this.date, this.score});
-
-  final String title;
-  final String url;
-  final int awards;
-  final int score;
-  final double date;
-
-  Future<String> _getStory(String url) async {
-    final _response = await http.get(url + '.json');
-    final String comment = jsonDecode(_response.body)[1]['data']['children'][1]
-            ['data']['body']
-        .toString();
-    return comment;
-  }
-
-// to save to shared pref
-  RedditPost.fromJson(Map<String, dynamic> json)
-      : title = json['title'],
-        url = json['url'],
-        score = json['score'],
-        awards = json['awards'],
-        date = json['date'];
-
-  Map<String, dynamic> toJson() => {
-        'title': title,
-        'url': url,
-        'awards': awards,
-        'score': score,
-        'date': date,
-      };
 }
