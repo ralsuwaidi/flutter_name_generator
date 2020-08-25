@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(MyApp());
 
@@ -27,10 +28,11 @@ class RedditWritingPrompts extends StatefulWidget {
 class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
   String _period = 'week';
   Future<List<RedditPost>> _listFuture;
+  List<String> _savedUrlList;
   @override
   void initState() {
     _listFuture = RedditPost().updateRedditList('week');
-
+    _loadCounter();
     super.initState();
   }
 
@@ -121,32 +123,70 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
       future: theStory,
       builder: (_context, snapshot) {
         if (snapshot.hasData) {
-          return SizedBox.expand(
-              child: DraggableScrollableSheet(
-                  initialChildSize: 1,
-                  builder: (context, scrollController) {
-                    return Container(
-                      child: ListView(
-                        // padding: EdgeInsets.all(15),
-                        children: <Widget>[
-                        Container(
-                          padding: EdgeInsets.all(15),
-                          child: MarkdownBody(
-                          data: snapshot.data,
-                          styleSheet:
-                              MarkdownStyleSheet(p: TextStyle(fontSize: 16)),
-                        )),
+          return NotificationListener<OverscrollIndicatorNotification>(
+              onNotification: (overscroll) {
+                overscroll.disallowGlow();
+                return null;
+              },
+              child: SizedBox.expand(
+                  child: DraggableScrollableSheet(
+                      initialChildSize: 1,
+                      builder: (context, scrollController) {
+                        return Container(
+                          child: ListView(
 
-                        Container(
-                          padding: EdgeInsets.fromLTRB(15, 10, 0, 20),
-                          color: Colors.grey[800],
-                          child: Row(
-                            children: <Widget>[Icon(Icons.favorite_border)],
-                          ),
-                        )
-                      ]),
-                    );
-                  }));
+                              // padding: EdgeInsets.all(15),
+                              children: <Widget>[
+                                Container(
+                                    padding: EdgeInsets.all(15),
+                                    child: MarkdownBody(
+                                      data: snapshot.data,
+                                      styleSheet: MarkdownStyleSheet(
+                                          p: TextStyle(fontSize: 16)),
+                                    )),
+                                Container(
+                                  padding: EdgeInsets.fromLTRB(15, 10, 0, 20),
+                                  color: Colors.grey[800],
+                                  child: Row(
+                                    children: <Widget>[
+                                      IconButton(
+                                        icon: _testIcon(_savedUrlList
+                                              .contains(post.url)),
+                                        onPressed: () {
+                                          if (!_savedUrlList
+                                              .contains(post.url)) {
+                                            setState(() {
+                                              _savedUrlList.add(post.url);
+                                            });
+
+                                            Fluttertoast.showToast(
+                                                msg: 'Saved ' +
+                                                    _savedUrlList.length
+                                                        .toString(),
+                                                toastLength: Toast.LENGTH_SHORT,
+                                                gravity: ToastGravity.BOTTOM,
+                                                timeInSecForIosWeb: 1,
+                                                backgroundColor: Colors.red,
+                                                textColor: Colors.white,
+                                                fontSize: 16.0);
+                                          } else {
+                                            Fluttertoast.showToast(
+                                                msg: 'Already have it ',
+                                                toastLength: Toast.LENGTH_SHORT,
+                                                gravity: ToastGravity.BOTTOM,
+                                                timeInSecForIosWeb: 1,
+                                                backgroundColor: Colors.red,
+                                                textColor: Colors.white,
+                                                fontSize: 16.0);
+                                          }
+                                        },
+                                      )
+                                    ],
+                                  ),
+                                )
+                              ]),
+                        );
+                      })));
         }
 
         return Center(
@@ -154,6 +194,13 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
         );
       },
     );
+  }
+
+  Widget _testIcon(bool saved){
+    if (saved){
+      return Icon(Icons.favorite);
+    }
+    return Icon(Icons.favorite_border);
   }
 
   // one row from list of stories
@@ -266,7 +313,11 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
       ]);
     } else {
       return Row(children: <Widget>[
-        Icon(Icons.stars, size: size, color: Colors.yellow),
+        Icon(
+          Icons.stars,
+          size: size,
+          color: Colors.yellow,
+        ),
         Text(
           awardNumber.toString(),
           style: TextStyle(fontSize: size),
@@ -278,6 +329,22 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
   void _select(String period) {
     setState(() {
       _listFuture = RedditPost().updateRedditList(period);
+    });
+  }
+
+  //Loading counter value on start
+  _loadCounter() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _savedUrlList = (prefs.getStringList('favourite') ?? <String>[]);
+    });
+  }
+
+  //Incrementing counter after click
+  _incrementCounter() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      prefs.setStringList('favourite', _savedUrlList);
     });
   }
 }
