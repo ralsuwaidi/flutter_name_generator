@@ -121,16 +121,32 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
       future: theStory,
       builder: (_context, snapshot) {
         if (snapshot.hasData) {
-          return NotificationListener<OverscrollIndicatorNotification>(
-              onNotification: (overscroll) {
-                overscroll.disallowGlow();
-                return null;
-              },
-              child: Scrollbar(
-                  child: Markdown(
-                data: snapshot.data,
-                styleSheet: MarkdownStyleSheet(p: TextStyle(fontSize: 16)),
-              )));
+          return SizedBox.expand(
+              child: DraggableScrollableSheet(
+                  initialChildSize: 1,
+                  builder: (context, scrollController) {
+                    return Container(
+                      child: ListView(
+                        // padding: EdgeInsets.all(15),
+                        children: <Widget>[
+                        Container(
+                          padding: EdgeInsets.all(15),
+                          child: MarkdownBody(
+                          data: snapshot.data,
+                          styleSheet:
+                              MarkdownStyleSheet(p: TextStyle(fontSize: 16)),
+                        )),
+
+                        Container(
+                          padding: EdgeInsets.fromLTRB(15, 10, 0, 20),
+                          color: Colors.grey[800],
+                          child: Row(
+                            children: <Widget>[Icon(Icons.favorite_border)],
+                          ),
+                        )
+                      ]),
+                    );
+                  }));
         }
 
         return Center(
