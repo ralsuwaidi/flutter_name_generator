@@ -42,6 +42,10 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
       DeviceOrientation.portraitDown,
     ]);
 
+    return _buildWP(_listFuture);
+  }
+
+  Widget _buildWP(Future<List<RedditPost>> wpList) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.grey[850],
@@ -62,18 +66,29 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                 value: 3,
                 child: Text("Monthly"),
               ),
+              PopupMenuItem(
+                value: 4,
+                child: Text("Fav"),
+              ),
             ],
             onSelected: (value) {
               if (value == 1) {
                 _period = 'day';
+                _select(_period);
               }
               if (value == 2) {
                 _period = 'week';
+                _select(_period);
               }
               if (value == 3) {
                 _period = 'month';
+                _select(_period);
               }
-              _select(_period);
+              if (value == 4) {
+                setState(() {
+                  _listFuture = RedditPost().postListFromUrl();
+                });
+              }
               Fluttertoast.showToast(
                   msg: 'Top of the ' + _period,
                   toastLength: Toast.LENGTH_SHORT,
@@ -87,7 +102,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
         ],
       ),
       body: FutureBuilder(
-          future: _listFuture,
+          future: wpList,
           builder: (BuildContext context, AsyncSnapshot snapshot) {
             if (snapshot.hasData) {
               return _buildWPList(snapshot.data);
@@ -137,6 +152,24 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
 
   // story widget after it is clicked
   Widget _buildStory(RedditPost post) {
+    if (post.story != null) {
+      return NotificationListener<OverscrollIndicatorNotification>(
+          onNotification: (overscroll) {
+            overscroll.disallowGlow();
+            return null;
+          },
+          child: SizedBox.expand(
+              child: DraggableScrollableSheet(
+                  initialChildSize: 1,
+                  builder: (context, scrollController) {
+                    return Story(
+                      story: post.story,
+                      post: post,
+                      favList: _savedUrlList,
+                      onPress: _updateSavedList,
+                    );
+                  })));
+    }
     final theStory = RedditPost().getStory(post.url);
     return FutureBuilder(
       future: theStory,
@@ -176,7 +209,12 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
       ),
       subtitle: Column(
         children: <Widget>[
-          if (post.awards != 0) _printAwards(post.awards, size: 12),
+          Row(
+            children: [
+              if (post.awards != 0) _printAwards(post.awards, size: 12),
+              // if (_savedUrlList.contains(post.url)) Icon(Icons.favorite,size: 15,)
+            ],
+          )
         ],
         crossAxisAlignment: CrossAxisAlignment.start,
       ),
@@ -301,14 +339,6 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       _savedUrlList = (prefs.getStringList('favourite') ?? <String>[]);
-    });
-  }
-
-  //Incrementing counter after click
-  _incrementCounter() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      prefs.setStringList('favourite', _savedUrlList);
     });
   }
 }

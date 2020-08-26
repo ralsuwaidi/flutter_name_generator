@@ -16,67 +16,67 @@ class Story extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-    child: Column(
+        child: Column(
 
-          // padding: EdgeInsets.all(15),
-          children: <Widget>[
-            Container(
-                padding: EdgeInsets.all(15),
-                child: MarkdownBody(
-                  data: story,
-                  styleSheet: MarkdownStyleSheet(p: TextStyle(fontSize: 16)),
-                )),
-            Container(
-              padding: EdgeInsets.fromLTRB(0, 10, 0, 20),
-              color: Colors.grey[800],
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  FavoriteWidget(favList: favList, post: post,)
-                ],
-              ),
-            )
-          ]));
+            // padding: EdgeInsets.all(15),
+            children: <Widget>[
+          Container(
+              padding: EdgeInsets.all(15),
+              child: MarkdownBody(
+                data: story,
+                styleSheet: MarkdownStyleSheet(p: TextStyle(fontSize: 16)),
+              )),
+          Container(
+            padding: EdgeInsets.fromLTRB(0, 10, 0, 12),
+            color: Colors.grey[800],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: <Widget>[
+                FavoriteWidget(
+                  favList: favList,
+                  post: post,
+                )
+              ],
+            ),
+          )
+        ]));
   }
-
-  
 }
 
 class FavoriteWidget extends StatefulWidget {
   final List<String> favList;
   final RedditPost post;
 
-  const FavoriteWidget({Key key, this.favList, this.post}):super(key:key);
+  const FavoriteWidget({Key key, this.favList, this.post}) : super(key: key);
   @override
   _FavoriteWidgetState createState() => _FavoriteWidgetState();
 }
 
 class _FavoriteWidgetState extends State<FavoriteWidget> {
-  
-  
   @override
   Widget build(BuildContext context) {
     return Container(
-          padding: EdgeInsets.all(0),
-          child: IconButton(
-            icon: (widget.favList.contains(widget.post.url) ? Icon(Icons.favorite) : Icon(Icons.favorite_border)),
-            onPressed: _toggleFavorite,
-          ),
-        
+      padding: EdgeInsets.all(0),
+      child: IconButton(
+        icon: (widget.favList.contains(widget.post.url)
+            ? Icon(Icons.favorite)
+            : Icon(Icons.favorite_border)),
+        onPressed: _toggleFavorite,
+      ),
     );
   }
 
   void _toggleFavorite() {
-  setState(() {
-    if (widget.favList.contains(widget.post.url)) {
-      widget.favList.remove(widget.post.url);
-      _incrementCounter(widget.favList);
-    } else {
-      widget.favList.add(widget.post.url);
-      _incrementCounter(widget.favList);
-    }
-  });
-}
+    setState(() {
+      if (widget.favList.contains(widget.post.url)) {
+        widget.favList.remove(widget.post.url);
+        _incrementCounter(widget.favList);
+      } else {
+        widget.favList.add(widget.post.url);
+        _incrementCounter(widget.favList);
+      }
+    });
+  }
 
   //Incrementing counter after click
   _incrementCounter(List<String> favList) async {
@@ -86,5 +86,3 @@ class _FavoriteWidgetState extends State<FavoriteWidget> {
     });
   }
 }
-
-

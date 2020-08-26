@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -45,7 +46,7 @@ class RedditPost {
       };
 
   Future<RedditPost> postFromUrl(String url) async {
-    final http.Response responseresult = await http.get(url);
+    final http.Response responseresult = await http.get(url+'.json');
     final List data = jsonDecode(responseresult.body);
     final post = data[0]['data']['children'][0]['data'];
     final String title = post['title'].toString();
@@ -58,6 +59,27 @@ class RedditPost {
     // log(story);
     return RedditPost(
         awards: awards, title: title, score: score, date: date, story: story);
+  }
+
+Future<List<RedditPost>> postListFromUrl() async{
+  List<String> savedUrlList = await _loadCounter();
+  List<RedditPost> redditPost= new List<RedditPost>();
+  log(savedUrlList.length.toString());
+  for (var i = 0; i < savedUrlList.length; i++) {
+    var test = await postFromUrl(savedUrlList[i]);
+    redditPost.add(test );
+    
+  }
+
+  return redditPost;
+
+}
+  //Loading counter value on start
+  Future<List<String>>_loadCounter() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    
+      return (prefs.getStringList('favourite') ?? <String>[]);
+    
   }
 Future<List<RedditPost>> updateRedditList(String period) async {
     Future<http.Response> _response(String period) {
