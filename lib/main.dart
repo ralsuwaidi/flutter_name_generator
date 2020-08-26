@@ -1,8 +1,8 @@
 import 'reddit.dart';
+import 'story.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart'; // Add this line.
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -116,6 +116,25 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
             }));
   }
 
+  void _updateSavedList(String url) {
+    Fluttertoast.showToast(
+        msg: 'Already have it ',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0);
+
+    setState(() {
+      if (_savedUrlList.contains(url)) {
+        _savedUrlList.remove(url);
+      } else {
+        _savedUrlList.add(url);
+      }
+    });
+  }
+
   // story widget after it is clicked
   Widget _buildStory(RedditPost post) {
     final theStory = RedditPost().getStory(post.url);
@@ -132,59 +151,11 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                   child: DraggableScrollableSheet(
                       initialChildSize: 1,
                       builder: (context, scrollController) {
-                        return Container(
-                          child: ListView(
-
-                              // padding: EdgeInsets.all(15),
-                              children: <Widget>[
-                                Container(
-                                    padding: EdgeInsets.all(15),
-                                    child: MarkdownBody(
-                                      data: snapshot.data,
-                                      styleSheet: MarkdownStyleSheet(
-                                          p: TextStyle(fontSize: 16)),
-                                    )),
-                                Container(
-                                  padding: EdgeInsets.fromLTRB(15, 10, 0, 20),
-                                  color: Colors.grey[800],
-                                  child: Row(
-                                    children: <Widget>[
-                                      IconButton(
-                                        icon: _testIcon(_savedUrlList
-                                              .contains(post.url)),
-                                        onPressed: () {
-                                          if (!_savedUrlList
-                                              .contains(post.url)) {
-                                            setState(() {
-                                              _savedUrlList.add(post.url);
-                                            });
-
-                                            Fluttertoast.showToast(
-                                                msg: 'Saved ' +
-                                                    _savedUrlList.length
-                                                        .toString(),
-                                                toastLength: Toast.LENGTH_SHORT,
-                                                gravity: ToastGravity.BOTTOM,
-                                                timeInSecForIosWeb: 1,
-                                                backgroundColor: Colors.red,
-                                                textColor: Colors.white,
-                                                fontSize: 16.0);
-                                          } else {
-                                            Fluttertoast.showToast(
-                                                msg: 'Already have it ',
-                                                toastLength: Toast.LENGTH_SHORT,
-                                                gravity: ToastGravity.BOTTOM,
-                                                timeInSecForIosWeb: 1,
-                                                backgroundColor: Colors.red,
-                                                textColor: Colors.white,
-                                                fontSize: 16.0);
-                                          }
-                                        },
-                                      )
-                                    ],
-                                  ),
-                                )
-                              ]),
+                        return Story(
+                          story: snapshot.data,
+                          post: post,
+                          saved: _savedUrlList.contains(post.url),
+                          onPress: _updateSavedList,
                         );
                       })));
         }
@@ -194,13 +165,6 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
         );
       },
     );
-  }
-
-  Widget _testIcon(bool saved){
-    if (saved){
-      return Icon(Icons.favorite);
-    }
-    return Icon(Icons.favorite_border);
   }
 
   // one row from list of stories
