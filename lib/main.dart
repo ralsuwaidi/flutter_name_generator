@@ -154,7 +154,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                         return Story(
                           story: snapshot.data,
                           post: post,
-                          saved: _savedUrlList.contains(post.url),
+                          favList: _savedUrlList,
                           onPress: _updateSavedList,
                         );
                       })));
