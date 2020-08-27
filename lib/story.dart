@@ -27,7 +27,7 @@ class Story extends StatelessWidget {
                 styleSheet: MarkdownStyleSheet(p: TextStyle(fontSize: 16)),
               )),
           Container(
-            padding: EdgeInsets.fromLTRB(0, 10, 0, 12),
+            padding: EdgeInsets.fromLTRB(0, 10, 0, 10),
             color: Colors.grey[800],
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,

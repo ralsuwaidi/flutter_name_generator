@@ -49,9 +49,16 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.grey[850],
-        title: Text('  Writing Prompts: ' +
+        title: Text('  WP: ' +
             _period.replaceFirst(_period[0], _period[0].toUpperCase())),
         actions: [
+          IconButton(
+              icon: Icon(Icons.favorite_border),
+              onPressed: () {
+                setState(() {
+                  _listFuture = RedditPost().postListFromUrl();
+                });
+              }),
           PopupMenuButton<int>(
             itemBuilder: (context) => [
               PopupMenuItem(
@@ -66,10 +73,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                 value: 3,
                 child: Text("Monthly"),
               ),
-              PopupMenuItem(
-                value: 4,
-                child: Text("Fav"),
-              ),
+              
             ],
             onSelected: (value) {
               if (value == 1) {
@@ -84,11 +88,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                 _period = 'month';
                 _select(_period);
               }
-              if (value == 4) {
-                setState(() {
-                  _listFuture = RedditPost().postListFromUrl();
-                });
-              }
+              
               Fluttertoast.showToast(
                   msg: 'Top of the ' + _period,
                   toastLength: Toast.LENGTH_SHORT,
@@ -99,6 +99,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                   fontSize: 16.0);
             },
           )
+          
         ],
       ),
       body: FutureBuilder(
@@ -132,15 +133,6 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
   }
 
   void _updateSavedList(String url) {
-    Fluttertoast.showToast(
-        msg: 'Already have it ',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0);
-
     setState(() {
       if (_savedUrlList.contains(url)) {
         _savedUrlList.remove(url);
@@ -153,44 +145,14 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
   // story widget after it is clicked
   Widget _buildStory(RedditPost post) {
     if (post.story != null) {
-      return NotificationListener<OverscrollIndicatorNotification>(
-          onNotification: (overscroll) {
-            overscroll.disallowGlow();
-            return null;
-          },
-          child: SizedBox.expand(
-              child: DraggableScrollableSheet(
-                  initialChildSize: 1,
-                  builder: (context, scrollController) {
-                    return Story(
-                      story: post.story,
-                      post: post,
-                      favList: _savedUrlList,
-                      onPress: _updateSavedList,
-                    );
-                  })));
+      return _storyTextWidget(post.story, post);
     }
     final theStory = RedditPost().getStory(post.url);
     return FutureBuilder(
       future: theStory,
       builder: (_context, snapshot) {
         if (snapshot.hasData) {
-          return NotificationListener<OverscrollIndicatorNotification>(
-              onNotification: (overscroll) {
-                overscroll.disallowGlow();
-                return null;
-              },
-              child: SizedBox.expand(
-                  child: DraggableScrollableSheet(
-                      initialChildSize: 1,
-                      builder: (context, scrollController) {
-                        return Story(
-                          story: snapshot.data,
-                          post: post,
-                          favList: _savedUrlList,
-                          onPress: _updateSavedList,
-                        );
-                      })));
+          return _storyTextWidget(snapshot.data, post);
         }
 
         return Center(
@@ -198,6 +160,25 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
         );
       },
     );
+  }
+
+  Widget _storyTextWidget(String story, RedditPost post) {
+    return NotificationListener<OverscrollIndicatorNotification>(
+        onNotification: (overscroll) {
+          overscroll.disallowGlow();
+          return null;
+        },
+        child: SizedBox.expand(
+            child: DraggableScrollableSheet(
+                initialChildSize: 1,
+                builder: (context, scrollController) {
+                  return Story(
+                    story: story,
+                    post: post,
+                    favList: _savedUrlList,
+                    onPress: _updateSavedList,
+                  );
+                })));
   }
 
   // one row from list of stories

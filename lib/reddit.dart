@@ -58,13 +58,13 @@ class RedditPost {
 
     // log(story);
     return RedditPost(
-        awards: awards, title: title, score: score, date: date, story: story);
+        awards: awards, title: title, score: score, date: date, story: story, url:url);
   }
 
 Future<List<RedditPost>> postListFromUrl() async{
   List<String> savedUrlList = await _loadCounter();
   List<RedditPost> redditPost= new List<RedditPost>();
-  log(savedUrlList.length.toString());
+  // log(savedUrlList.length.toString());
   for (var i = 0; i < savedUrlList.length; i++) {
     var test = await postFromUrl(savedUrlList[i]);
     redditPost.add(test );
