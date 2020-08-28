@@ -28,7 +28,7 @@ class RedditWritingPrompts extends StatefulWidget {
 class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
   String _period = 'week';
   Future<List<RedditPost>> _listFuture;
-  List<String> _savedUrlList;
+  List<RedditPost> _favPostList = new List<RedditPost>();
   @override
   void initState() {
     _listFuture = RedditPost().updateRedditList('week');
@@ -56,7 +56,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
               icon: Icon(Icons.favorite_border),
               onPressed: () {
                 setState(() {
-                  _listFuture = RedditPost().postListFromUrl();
+                  _listFuture = RedditPost().getSavedPostList();
                 });
               }),
           PopupMenuButton<int>(
@@ -132,12 +132,12 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
             }));
   }
 
-  void _updateSavedList(String url) {
+  void _updateSavedList(RedditPost post) {
     setState(() {
-      if (_savedUrlList.contains(url)) {
-        _savedUrlList.remove(url);
+      if (RedditPost().isSaved(_favPostList, post)) {
+        _favPostList.remove(post);
       } else {
-        _savedUrlList.add(url);
+        _favPostList.add(post);
       }
     });
   }
@@ -175,8 +175,8 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
                   return Story(
                     story: story,
                     post: post,
-                    favList: _savedUrlList,
                     onPress: _updateSavedList,
+                    favPostList: _favPostList,
                   );
                 })));
   }
@@ -317,9 +317,9 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
 
   //Loading counter value on start
   _loadCounter() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<RedditPost> savedList = await RedditPost().getSavedPostList();
     setState(() {
-      _savedUrlList = (prefs.getStringList('favourite') ?? <String>[]);
+      _favPostList = savedList;
     });
   }
 }

@@ -17,8 +17,6 @@ class RedditPost {
   final double date;
   final String story;
 
-  
-
   Future<String> getStory(String url) async {
     final _response = await http.get(url + '.json');
     final String comment = jsonDecode(_response.body)[1]['data']['children'][1]
@@ -46,7 +44,7 @@ class RedditPost {
       };
 
   Future<RedditPost> postFromUrl(String url) async {
-    final http.Response responseresult = await http.get(url+'.json');
+    final http.Response responseresult = await http.get(url + '.json');
     final List data = jsonDecode(responseresult.body);
     final post = data[0]['data']['children'][0]['data'];
     final String title = post['title'].toString();
@@ -58,43 +56,63 @@ class RedditPost {
 
     // log(story);
     return RedditPost(
-        awards: awards, title: title, score: score, date: date, story: story, url:url);
+        awards: awards,
+        title: title,
+        score: score,
+        date: date,
+        story: story,
+        url: url);
   }
 
-Future<List<RedditPost>> postListFromUrl() async{
-  List<String> savedUrlList = await _loadCounter();
-  List<RedditPost> redditPost= new List<RedditPost>();
-  // log(savedUrlList.length.toString());
-  for (var i = 0; i < savedUrlList.length; i++) {
-    var test = await postFromUrl(savedUrlList[i]);
-    redditPost.add(test );
-    
-  }
+  // Future<List<RedditPost>> postListFromUrl() async {
+  //   List<String> savedUrlList = await _loadCounter();
+  //   List<RedditPost> redditPost = new List<RedditPost>();
+  //   // log(savedUrlList.length.toString());
+  //   for (var i = 0; i < savedUrlList.length; i++) {
+  //     var test = await postFromUrl(savedUrlList[i]);
+  //     redditPost.add(test);
+  //   }
 
-  return redditPost;
-
-}
-  //Loading counter value on start
-  Future<List<String>>_loadCounter() async {
+  //   return redditPost;
+  // }
+  Future<List<RedditPost>> getSavedPostList() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    
-      return (prefs.getStringList('favourite') ?? <String>[]);
-    
+    List<String> savedJsonList =
+        (prefs.getStringList('savedjson') ?? <String>[]);
+    var postMap = savedJsonList.map((e) => jsonDecode(e));
+    var postList = postMap.map((e) => RedditPost.fromJson(e)).toList();
+
+    return postList;
   }
-Future<List<RedditPost>> updateRedditList(String period) async {
+
+  bool isSaved(List<RedditPost> postList, RedditPost post) {
+    bool alreadySaved = false;
+    for (var i = 0; i < postList.length; i++) {
+      if (postList[i].title == post.title) {
+        alreadySaved = true;
+      } else {
+        alreadySaved = false;
+      }
+    }
+
+    log(postList.length.toString());
+    return alreadySaved;
+  }
+
+  Future<List<RedditPost>> updateRedditList(String period) async {
     Future<http.Response> _response(String period) {
-    if (period == 'week') {
+      if (period == 'week') {
+        return http
+            .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=week');
+      }
+      if (period == 'day') {
+        return http
+            .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=day');
+      }
       return http
-          .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=week');
+          .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=month');
     }
-    if (period == 'day') {
-      return http
-          .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=day');
-    }
-    return http
-        .get('https://www.reddit.com/r/WritingPrompts/top/.json?t=month');
-  }
-  
+
     final responseresult = await _response(period);
     final List posts = jsonDecode(responseresult.body)['data']['children'];
     final titleList = posts.map((e) => e['data']['title']).toList();
@@ -117,5 +135,4 @@ Future<List<RedditPost>> updateRedditList(String period) async {
     }
     return redditList;
   }
-  
 }

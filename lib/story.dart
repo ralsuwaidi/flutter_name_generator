@@ -1,3 +1,6 @@
+import 'dart:developer';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'reddit.dart';
 import 'package:flutter/rendering.dart'; // Add this line.
@@ -7,10 +10,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Story extends StatelessWidget {
   final String story;
   final RedditPost post;
-  final Function(String url) onPress;
+  final Function(RedditPost post) onPress;
   final List<String> favList;
+  final List<RedditPost> favPostList;
 
-  const Story({Key key, this.story, this.post, this.onPress, this.favList})
+  const Story(
+      {Key key,
+      this.story,
+      this.post,
+      this.onPress,
+      this.favList,
+      this.favPostList})
       : super(key: key);
 
   @override
@@ -35,6 +45,7 @@ class Story extends StatelessWidget {
                 FavoriteWidget(
                   favList: favList,
                   post: post,
+                  favPostList: favPostList,
                 )
               ],
             ),
@@ -43,11 +54,14 @@ class Story extends StatelessWidget {
   }
 }
 
+// widget with the hart at the end of the story
 class FavoriteWidget extends StatefulWidget {
   final List<String> favList;
   final RedditPost post;
+  final List<RedditPost> favPostList;
 
-  const FavoriteWidget({Key key, this.favList, this.post}) : super(key: key);
+  const FavoriteWidget({Key key, this.favList, this.post, this.favPostList})
+      : super(key: key);
   @override
   _FavoriteWidgetState createState() => _FavoriteWidgetState();
 }
@@ -58,7 +72,7 @@ class _FavoriteWidgetState extends State<FavoriteWidget> {
     return Container(
       padding: EdgeInsets.all(0),
       child: IconButton(
-        icon: (widget.favList.contains(widget.post.url)
+        icon: (RedditPost().isSaved(widget.favPostList, widget.post)
             ? Icon(Icons.favorite)
             : Icon(Icons.favorite_border)),
         onPressed: _toggleFavorite,
@@ -68,21 +82,28 @@ class _FavoriteWidgetState extends State<FavoriteWidget> {
 
   void _toggleFavorite() {
     setState(() {
-      if (widget.favList.contains(widget.post.url)) {
-        widget.favList.remove(widget.post.url);
-        _incrementCounter(widget.favList);
+      if (RedditPost().isSaved(widget.favPostList, widget.post)) {
+        widget.favPostList.removeWhere((element) => element.title==widget.post.title);
+        // log(RedditPost().isSaved(widget.favPostList, widget.post).toString());
+        _saveJsonList(widget.favPostList);
       } else {
-        widget.favList.add(widget.post.url);
-        _incrementCounter(widget.favList);
+        widget.favPostList.add(widget.post);
+        log(RedditPost().isSaved(widget.favPostList, widget.post).toString());
+        _saveJsonList(widget.favPostList);
       }
     });
   }
 
   //Incrementing counter after click
-  _incrementCounter(List<String> favList) async {
+  _saveJsonList(List<RedditPost> savedRedditPost) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> savedJsonList =
+        savedRedditPost.map((e) => jsonEncode(e)).toList();
     setState(() {
-      prefs.setStringList('favourite', favList);
+      prefs.setStringList('savedjson', savedJsonList);
     });
+    // Map postMap = jsonDecode(savedJsonList[0]);
+    // var post = RedditPost.fromJson(postMap);
+    // log(post.title);
   }
 }
