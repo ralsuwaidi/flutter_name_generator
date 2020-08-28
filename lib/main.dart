@@ -5,7 +5,6 @@ import 'package:flutter/rendering.dart'; // Add this line.
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(MyApp());
 
@@ -56,6 +55,7 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
               icon: Icon(Icons.favorite_border),
               onPressed: () {
                 setState(() {
+                  _period='Saved';
                   _listFuture = RedditPost().getSavedPostList();
                 });
               }),
@@ -142,11 +142,8 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
     });
   }
 
-  // story widget after it is clicked
+  /// story widget after it is clicked
   Widget _buildStory(RedditPost post) {
-    if (post.story != null) {
-      return _storyTextWidget(post.story, post);
-    }
     final theStory = RedditPost().getStory(post.url);
     return FutureBuilder(
       future: theStory,
@@ -162,6 +159,8 @@ class _RedditWritingPromptsState extends State<RedditWritingPrompts> {
     );
   }
 
+  /// return story as a widget inside a dragable sheet
+  /// under story is the favourite widget
   Widget _storyTextWidget(String story, RedditPost post) {
     return NotificationListener<OverscrollIndicatorNotification>(
         onNotification: (overscroll) {

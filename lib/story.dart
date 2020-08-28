@@ -54,7 +54,8 @@ class Story extends StatelessWidget {
   }
 }
 
-// widget with the hart at the end of the story
+/// widget with the heart at the end of the story
+/// widget saves and compares from saved list in sharedpref
 class FavoriteWidget extends StatefulWidget {
   final List<String> favList;
   final RedditPost post;
@@ -80,21 +81,20 @@ class _FavoriteWidgetState extends State<FavoriteWidget> {
     );
   }
 
+  /// toggle favourite on click on icon
   void _toggleFavorite() {
     setState(() {
       if (RedditPost().isSaved(widget.favPostList, widget.post)) {
         widget.favPostList.removeWhere((element) => element.title==widget.post.title);
-        // log(RedditPost().isSaved(widget.favPostList, widget.post).toString());
         _saveJsonList(widget.favPostList);
       } else {
         widget.favPostList.add(widget.post);
-        log(RedditPost().isSaved(widget.favPostList, widget.post).toString());
         _saveJsonList(widget.favPostList);
       }
     });
   }
 
-  //Incrementing counter after click
+  /// save list of RedditPost to shared pref as string of json
   _saveJsonList(List<RedditPost> savedRedditPost) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String> savedJsonList =
@@ -102,8 +102,5 @@ class _FavoriteWidgetState extends State<FavoriteWidget> {
     setState(() {
       prefs.setStringList('savedjson', savedJsonList);
     });
-    // Map postMap = jsonDecode(savedJsonList[0]);
-    // var post = RedditPost.fromJson(postMap);
-    // log(post.title);
   }
 }

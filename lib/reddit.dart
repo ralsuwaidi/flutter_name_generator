@@ -4,8 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// json serialisation (to save to shared pref)
-// https://flutter.dev/docs/development/data-and-backend/json
+/// class to deal with reddit writing prompts
 class RedditPost {
   const RedditPost(
       {this.title, this.url, this.awards, this.date, this.score, this.story});
@@ -17,6 +16,7 @@ class RedditPost {
   final double date;
   final String story;
 
+  /// return story when given a reddit url as string
   Future<String> getStory(String url) async {
     final _response = await http.get(url + '.json');
     final String comment = jsonDecode(_response.body)[1]['data']['children'][1]
@@ -43,38 +43,7 @@ class RedditPost {
         'story': story,
       };
 
-  Future<RedditPost> postFromUrl(String url) async {
-    final http.Response responseresult = await http.get(url + '.json');
-    final List data = jsonDecode(responseresult.body);
-    final post = data[0]['data']['children'][0]['data'];
-    final String title = post['title'].toString();
-    final int awards = post['total_awards_received'].toInt();
-    final int score = post['ups'].toInt();
-    final double date = post['created'].toDouble();
-    final String story =
-        data[1]['data']['children'][1]['data']['body'].toString();
-
-    // log(story);
-    return RedditPost(
-        awards: awards,
-        title: title,
-        score: score,
-        date: date,
-        story: story,
-        url: url);
-  }
-
-  // Future<List<RedditPost>> postListFromUrl() async {
-  //   List<String> savedUrlList = await _loadCounter();
-  //   List<RedditPost> redditPost = new List<RedditPost>();
-  //   // log(savedUrlList.length.toString());
-  //   for (var i = 0; i < savedUrlList.length; i++) {
-  //     var test = await postFromUrl(savedUrlList[i]);
-  //     redditPost.add(test);
-  //   }
-
-  //   return redditPost;
-  // }
+  /// return list of RedditPost from sharedPref
   Future<List<RedditPost>> getSavedPostList() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String> savedJsonList =
@@ -85,6 +54,7 @@ class RedditPost {
     return postList;
   }
 
+  /// return bool if post is available in List of RedditPost
   bool isSaved(List<RedditPost> postList, RedditPost post) {
     bool alreadySaved = false;
     for (var i = 0; i < postList.length; i++) {
@@ -95,10 +65,10 @@ class RedditPost {
       }
     }
 
-    log(postList.length.toString());
     return alreadySaved;
   }
 
+  /// return Future List of reddit post depending on the period selected
   Future<List<RedditPost>> updateRedditList(String period) async {
     Future<http.Response> _response(String period) {
       if (period == 'week') {
